@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { LanguageProvider } from "@/lib/i18n/context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,17 +14,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Transcripciones Udemy",
-  description: "Convierte las transcripciones y artículos de una sección de Udemy en archivos Markdown",
+  title: "Udemy Transcripts",
+  description: "Turn the transcripts and articles of a Udemy section into Markdown files",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="es"
+      lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <LanguageProvider>{children}</LanguageProvider>
+      </body>
     </html>
   );
 }

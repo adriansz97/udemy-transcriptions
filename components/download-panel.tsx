@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/context";
 import { buttonPrimary } from "@/lib/styles";
 
 interface DownloadPanelProps {
@@ -19,6 +20,7 @@ export default function DownloadPanel({
   error,
   onDownload,
 }: DownloadPanelProps) {
+  const { t } = useI18n();
   const missing = total - completed;
 
   return (
@@ -29,13 +31,11 @@ export default function DownloadPanel({
         disabled={!isComplete || downloading}
         className={`${buttonPrimary} w-full`}
       >
-        {downloading ? "Generando ZIP…" : "Descargar .zip"}
+        {downloading ? t.download.generating : t.download.button}
       </button>
 
       <p className="mt-2 text-xs text-zinc-500">
-        {isComplete
-          ? "Todo listo: una carpeta con un .md por clase."
-          : `Faltan ${missing} clase${missing === 1 ? "" : "s"} por completar para descargar.`}
+        {isComplete ? t.download.ready : t.download.missing(missing)}
       </p>
 
       {error && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{error}</p>}

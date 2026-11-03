@@ -1,6 +1,7 @@
 "use client";
 
 import DownloadPanel from "./download-panel";
+import { useI18n } from "@/lib/i18n/context";
 import type { Section } from "@/lib/types";
 
 interface LessonSidebarProps {
@@ -26,19 +27,18 @@ export default function LessonSidebar({
   onSelect,
   onDownload,
 }: LessonSidebarProps) {
+  const { t } = useI18n();
   const total = section.lessons.length;
   const progress = total === 0 ? 0 : Math.round((completedCount / total) * 100);
 
   return (
     <aside className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] dark:border-zinc-800 dark:bg-zinc-900">
       <div>
-        <p className="text-xs uppercase tracking-wide text-zinc-500">Sección</p>
+        <p className="text-xs uppercase tracking-wide text-zinc-500">{t.sidebar.section}</p>
         <h2 className="mt-1 text-lg font-semibold leading-snug">{section.title}</h2>
 
         <div className="mt-3 flex items-center justify-between text-xs text-zinc-500">
-          <span>
-            {completedCount} de {total} clases
-          </span>
+          <span>{t.sidebar.progress(completedCount, total)}</span>
           <span>{progress}%</span>
         </div>
         <div className="mt-1 h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">

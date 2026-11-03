@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import LanguageSwitcher from "./language-switcher";
 import LessonEditor from "./lesson-editor";
 import LessonSidebar from "./lesson-sidebar";
 import SectionImport from "./section-import";
 import { buildMarkdownFiles, buildZipName } from "@/lib/export";
+import { useI18n } from "@/lib/i18n/context";
 import { sanitizeFilename } from "@/lib/sanitize";
 import { clearWorkspace, loadWorkspace, saveWorkspace } from "@/lib/storage";
 import { buttonSecondary } from "@/lib/styles";
@@ -17,6 +19,7 @@ const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 
 export default function Workspace() {
+  const { t } = useI18n();
   const [workspace, setWorkspace] = useState<WorkspaceState>(
     () => loadWorkspace() ?? EMPTY_WORKSPACE
   );
@@ -102,9 +105,7 @@ export default function Workspace() {
   }
 
   function handleReset() {
-    const confirmed = window.confirm(
-      "¿Borrar la sección y todos los contenidos guardados? Esta acción no se puede deshacer."
-    );
+    const confirmed = window.confirm(t.workspace.resetConfirm);
     if (!confirmed) return;
 
     clearWorkspace();
@@ -120,38 +121,48 @@ export default function Workspace() {
     setDownloadError(null);
 
     try {
-      const files = buildMarkdownFiles(section, workspace.contents);
+      const files = buildMarkdownFiles(
+        section,
+        workspace.contents,
+        t.files.untitledFallback
+      );
       await downloadZip(
-        buildZipName(section.title),
-        sanitizeFilename(section.title, "seccion"),
+        buildZipName(section.title, t.files.sectionFallback),
+        sanitizeFilename(section.title, t.files.sectionFallback),
         files
       );
     } catch {
-      setDownloadError("No se pudo generar el ZIP. Inténtalo de nuevo.");
+      setDownloadError(t.download.error);
     } finally {
       setDownloading(false);
     }
   }
 
   if (!hydrated) {
-    return <p className="py-10 text-sm text-zinc-500">Cargando…</p>;
+    return (
+      <div aria-busy="true" className="flex flex-col gap-3 py-6">
+        <div className="h-7 w-56 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+        <div className="h-4 w-80 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+      </div>
+    );
   }
 
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Transcripciones Udemy</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            Sección → transcripciones y artículos → ZIP con un Markdown por clase.
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t.app.title}</h1>
+          <p className="mt-1 text-sm text-zinc-500">{t.app.tagline}</p>
         </div>
 
-        {section && (
-          <button type="button" onClick={handleReset} className={buttonSecondary}>
-            Nueva sección
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher />
+          {section && (
+            <button type="button" onClick={handleReset} className={buttonSecondary}>
+              {t.header.newSection}
+            </button>
+          )}
+        </div>
       </header>
 
       {!section ? (
@@ -182,7 +193,7 @@ export default function Workspace() {
               />
             ) : (
               <p className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700">
-                Selecciona una clase del listado para agregar su contenido.
+                {t.workspace.selectLesson}
               </p>
             )}
           </section>

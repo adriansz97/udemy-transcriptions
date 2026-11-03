@@ -72,11 +72,15 @@ function toLesson(item: DetectedItem, hasIcons: boolean): Lesson {
   return { id: item.id, title: item.title, type };
 }
 
-function readSection(panel: Element, index: number): ParsedSection | null {
+function readSection(
+  panel: Element,
+  index: number,
+  fallbackTitle: (index: number) => string
+): ParsedSection | null {
   const titleElement =
     panel.querySelector(`${SECTION_HEADING_SELECTOR} ${SECTION_TITLE_SELECTOR}`) ??
     panel.querySelector(SECTION_TITLE_SELECTOR);
-  const title = normalizeText(titleElement?.textContent) || `Sección ${index + 1}`;
+  const title = normalizeText(titleElement?.textContent) || fallbackTitle(index);
 
   const itemElements = Array.from(panel.querySelectorAll(ITEM_SELECTOR));
   const detectedItems = readItems(itemElements, index);
@@ -94,7 +98,10 @@ function readSection(panel: Element, index: number): ParsedSection | null {
   return { title, lessons, skipped: detectedItems.length - lessons.length };
 }
 
-export function parseSectionHtml(html: string): ParsedSection[] {
+export function parseSectionHtml(
+  html: string,
+  fallbackTitle: (index: number) => string = (index) => `Sección ${index + 1}`
+): ParsedSection[] {
   const doc = new DOMParser().parseFromString(html, "text/html");
   let panels = Array.from(doc.querySelectorAll(SECTION_PANEL_SELECTOR));
 
@@ -103,6 +110,6 @@ export function parseSectionHtml(html: string): ParsedSection[] {
   }
 
   return panels
-    .map((panel, index) => readSection(panel, index))
+    .map((panel, index) => readSection(panel, index, fallbackTitle))
     .filter((section): section is ParsedSection => section !== null);
 }

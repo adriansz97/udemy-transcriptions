@@ -21,6 +21,12 @@ Los nombres de archivo y carpeta se sanean (se quitan `: / \ * ? " < > |`, entre
 
 El progreso se guarda en `localStorage` (clave `udemy-transcripts:v2`, con migración desde `v1`), así que puedes recargar la página sin perder nada.
 
+## Idiomas
+
+La interfaz está disponible en **español** e **inglés**. El selector `ES / EN` de la cabecera cambia todos los textos al instante y guarda la preferencia en `localStorage` (`udemy-transcripts:locale`). Si no hay preferencia guardada se usa el idioma del navegador; cuando no coincide con ninguno soportado, se usa inglés.
+
+Los diccionarios viven en `lib/i18n/dictionaries/` (`es.ts` y `en.ts`). El tipo `Dictionary` hace que ambos deban tener las mismas claves: si añades un texto, añádelo en los dos archivos.
+
 ## Desarrollo
 
 ```bash

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ExportIcon, RemoveIcon, TrashIcon } from "./icons";
 import { buildMarkdownFileName } from "@/lib/export";
 import { downloadMarkdownFile } from "@/lib/download";
+import { useI18n } from "@/lib/i18n/context";
 import { buildMarkdown } from "@/lib/markdown";
 import { parseLessonHtml } from "@/lib/parse-lesson";
 import {
@@ -14,7 +15,7 @@ import {
   cardClass,
   inputClass,
 } from "@/lib/styles";
-import type { Lesson, LessonType } from "@/lib/types";
+import type { Lesson } from "@/lib/types";
 
 interface LessonEditorProps {
   lesson: Lesson;
@@ -24,57 +25,6 @@ interface LessonEditorProps {
   onRemoveLesson?: (lessonId: string) => void;
 }
 
-interface EditorCopy {
-  label: string;
-  htmlLabel: string;
-  htmlPlaceholder: string;
-  analyzeHint: string;
-  markdownPlaceholder: string;
-  emptyError: string;
-  saveLabel: string;
-  cancelLabel: string;
-  deleteConfirm: (title: string) => string;
-}
-
-const COPY: Record<LessonType, EditorCopy> = {
-  article: {
-    label: "Artículo / nota",
-    htmlLabel: "HTML del artículo o nota",
-    htmlPlaceholder:
-      '<div data-purpose="safely-set-inner-html:rich-text-viewer:html">…</div>',
-    analyzeHint: "Se conservan títulos, listas, negritas, enlaces y bloques de código.",
-    markdownPlaceholder: "Pega el HTML del artículo y pulsa Analizar, o escribe el Markdown.",
-    emptyError: "El artículo está vacío.",
-    saveLabel: "Guardar artículo",
-    cancelLabel: "Cancelar",
-    deleteConfirm: (title) => `¿Eliminar el contenido del artículo "${title}"?`,
-  },
-  video: {
-    label: "Transcripción",
-    htmlLabel: "HTML de la transcripción",
-    htmlPlaceholder: '<div data-purpose="transcript-panel">…</div>',
-    analyzeHint: "Se descartan los timestamps y se unen los cues en párrafos.",
-    markdownPlaceholder:
-      "Pega el HTML y pulsa Analizar, o escribe el Markdown directamente.",
-    emptyError: "La transcripción está vacía.",
-    saveLabel: "Guardar transcripción",
-    cancelLabel: "Cancelar",
-    deleteConfirm: (title) => `¿Eliminar el contenido de la transcripción "${title}"?`,
-  },
-  other: {
-    label: "Contenido",
-    htmlLabel: "HTML del contenido",
-    htmlPlaceholder: '<div data-purpose="safely-set-inner-html:rich-text-viewer:html">…</div>',
-    analyzeHint: "Se detecta automáticamente si es una transcripción o un artículo.",
-    markdownPlaceholder:
-      "Pega el HTML y pulsa Analizar, o escribe el Markdown directamente.",
-    emptyError: "El contenido está vacío.",
-    saveLabel: "Guardar contenido",
-    cancelLabel: "Cancelar",
-    deleteConfirm: (title) => `¿Eliminar el contenido de "${title}"?`,
-  },
-};
-
 export default function LessonEditor({
   lesson,
   value,
@@ -82,7 +32,8 @@ export default function LessonEditor({
   onDelete,
   onRemoveLesson,
 }: LessonEditorProps) {
-  const copy = COPY[lesson.type];
+  const { t } = useI18n();
+  const copy = t.editor.types[lesson.type];
   const [mode, setMode] = useState<"view" | "edit">(value ? "view" : "edit");
   const [html, setHtml] = useState("");
   const [draft, setDraft] = useState(value ?? "");
@@ -103,9 +54,7 @@ export default function LessonEditor({
     const parsed = parseLessonHtml(source, lesson.type);
 
     if (!parsed) {
-      setError(
-        "No se encontró contenido en el HTML. Revisa que hayas pegado el panel completo."
-      );
+      setError(t.editor.analyzeError);
       return false;
     }
 
@@ -162,10 +111,7 @@ export default function LessonEditor({
 
   function handleRemoveLesson() {
     if (!onRemoveLesson) return;
-    const confirmed = window.confirm(
-      `¿Quitar "${lesson.title}" de esta sección? Se eliminará del listado y no se incluirá en el ZIP. Esta acción no se puede deshacer.`
-    );
-    if (!confirmed) return;
+    if (!window.confirm(t.editor.removeConfirm(lesson.title))) return;
 
     onRemoveLesson(lesson.id);
   }
@@ -179,7 +125,7 @@ export default function LessonEditor({
 
   function handleExport() {
     downloadMarkdownFile({
-      name: buildMarkdownFileName(lesson.title),
+      name: buildMarkdownFileName(lesson.title, t.files.untitledFallback),
       content: buildMarkdown(lesson.title, value ?? ""),
     });
   }
@@ -198,7 +144,7 @@ export default function LessonEditor({
               : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
           }`}
         >
-          {hasSaved ? "Completado" : "Pendiente"}
+          {hasSaved ? t.editor.complete : t.editor.pending}
         </span>
       </div>
 
@@ -211,20 +157,20 @@ export default function LessonEditor({
             <button
               type="button"
               onClick={handleExport}
-              title="Descargar .md"
-              aria-label="Descargar .md"
+              title={t.editor.exportTitle}
+              aria-label={t.editor.exportTitle}
               className={buttonIcon}
             >
               <ExportIcon className="h-5 w-5" />
             </button>
             <button type="button" onClick={handleReplace} className={buttonSecondary}>
-              Reemplazar
+              {t.editor.replace}
             </button>
             <button
               type="button"
               onClick={handleDelete}
-              title="Eliminar contenido"
-              aria-label="Eliminar contenido"
+              title={t.editor.deleteTitle}
+              aria-label={t.editor.deleteTitle}
               className={buttonIconDanger}
             >
               <TrashIcon className="h-5 w-5" />
@@ -233,8 +179,8 @@ export default function LessonEditor({
               <button
                 type="button"
                 onClick={handleRemoveLesson}
-                title="Quitar de la sección"
-                aria-label="Quitar de la sección"
+                title={t.editor.removeTitle}
+                aria-label={t.editor.removeTitle}
                 className={buttonIcon}
               >
                 <RemoveIcon className="h-5 w-5" />
@@ -264,13 +210,13 @@ export default function LessonEditor({
               disabled={!html.trim()}
               className={buttonSecondary}
             >
-              Analizar HTML
+              {t.editor.analyze}
             </button>
             <span className="text-xs text-zinc-500">{copy.analyzeHint}</span>
           </div>
 
           <label className="flex flex-col gap-1 text-sm font-medium">
-            Markdown
+            {t.editor.markdownLabel}
             <textarea
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
@@ -302,8 +248,8 @@ export default function LessonEditor({
               <button
                 type="button"
                 onClick={handleDelete}
-                title="Eliminar contenido"
-                aria-label="Eliminar contenido"
+                title={t.editor.deleteTitle}
+                aria-label={t.editor.deleteTitle}
                 className={buttonIconDanger}
               >
                 <TrashIcon className="h-5 w-5" />
@@ -313,8 +259,8 @@ export default function LessonEditor({
               <button
                 type="button"
                 onClick={handleRemoveLesson}
-                title="Quitar de la sección"
-                aria-label="Quitar de la sección"
+                title={t.editor.removeTitle}
+                aria-label={t.editor.removeTitle}
                 className={buttonIcon}
               >
                 <RemoveIcon className="h-5 w-5" />

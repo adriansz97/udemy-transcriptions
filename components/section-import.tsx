@@ -1,21 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n/context";
 import { parseSectionHtml } from "@/lib/parse-section";
 import { buttonPrimary, buttonSecondary, cardClass, inputClass } from "@/lib/styles";
-import type { LessonType, ParsedSection, Section } from "@/lib/types";
+import type { ParsedSection, Section } from "@/lib/types";
 
 interface SectionImportProps {
   onImport: (section: Section) => void;
 }
 
-const TYPE_LABELS: Record<LessonType, string> = {
-  video: "Video",
-  article: "Artículo",
-  other: "Contenido",
-};
-
 export default function SectionImport({ onImport }: SectionImportProps) {
+  const { t } = useI18n();
   const [html, setHtml] = useState("");
   const [sections, setSections] = useState<ParsedSection[] | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -24,13 +20,11 @@ export default function SectionImport({ onImport }: SectionImportProps) {
   const selected = sections?.[selectedIndex] ?? null;
 
   function handleAnalyze() {
-    const parsed = parseSectionHtml(html);
+    const parsed = parseSectionHtml(html, t.import.defaultSectionTitle);
 
     if (parsed.length === 0) {
       setSections(null);
-      setError(
-        "No se encontraron clases. Pega el HTML del currículo de la sección (debe incluir los ítems con su título)."
-      );
+      setError(t.import.noLessons);
       return;
     }
 
@@ -63,7 +57,7 @@ export default function SectionImport({ onImport }: SectionImportProps) {
       .filter((lesson) => lesson.title.length > 0);
 
     if (!title || lessons.length === 0) {
-      setError("La sección necesita un título y al menos una clase.");
+      setError(t.import.missingData);
       return;
     }
 
@@ -73,11 +67,8 @@ export default function SectionImport({ onImport }: SectionImportProps) {
   return (
     <div className={`${cardClass} flex flex-col gap-4`}>
       <div>
-        <h2 className="text-lg font-semibold">1. Pega el HTML de la sección</h2>
-        <p className="mt-1 text-sm text-zinc-500">
-          Copia el panel de la sección desde el currículo de Udemy. Se incluyen videos,
-          artículos y otros contenidos; los quizzes se omiten.
-        </p>
+        <h2 className="text-lg font-semibold">{t.import.heading}</h2>
+        <p className="mt-1 text-sm text-zinc-500">{t.import.description}</p>
       </div>
 
       <textarea
@@ -85,7 +76,7 @@ export default function SectionImport({ onImport }: SectionImportProps) {
         onChange={(event) => setHtml(event.target.value)}
         rows={12}
         spellCheck={false}
-        aria-label="HTML de la sección"
+        aria-label={t.import.htmlLabel}
         placeholder='<div data-purpose="section-panel-2">…</div>'
         className={`${inputClass} font-mono text-xs`}
       />
@@ -97,7 +88,7 @@ export default function SectionImport({ onImport }: SectionImportProps) {
           disabled={!html.trim()}
           className={buttonPrimary}
         >
-          Analizar HTML
+          {t.import.analyze}
         </button>
         {html && (
           <button
@@ -109,7 +100,7 @@ export default function SectionImport({ onImport }: SectionImportProps) {
             }}
             className={buttonSecondary}
           >
-            Limpiar
+            {t.import.clear}
           </button>
         )}
       </div>
@@ -120,7 +111,7 @@ export default function SectionImport({ onImport }: SectionImportProps) {
         <div className="flex flex-col gap-4 border-t border-zinc-200 pt-4 dark:border-zinc-800">
           {sections.length > 1 && (
             <label className="flex flex-col gap-1 text-sm font-medium">
-              Sección encontrada
+              {t.import.foundSection}
               <select
                 value={selectedIndex}
                 onChange={(event) => setSelectedIndex(Number(event.target.value))}
@@ -128,7 +119,7 @@ export default function SectionImport({ onImport }: SectionImportProps) {
               >
                 {sections.map((section, index) => (
                   <option key={`${section.title}-${index}`} value={index}>
-                    {section.title} ({section.lessons.length} clases)
+                    {t.import.sectionOption(section.title, section.lessons.length)}
                   </option>
                 ))}
               </select>
@@ -136,7 +127,7 @@ export default function SectionImport({ onImport }: SectionImportProps) {
           )}
 
           <label className="flex flex-col gap-1 text-sm font-medium">
-            Título de la sección
+            {t.import.sectionTitle}
             <input
               value={selected.title}
               onChange={(event) =>
@@ -148,11 +139,12 @@ export default function SectionImport({ onImport }: SectionImportProps) {
 
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">Clases ({selected.lessons.length})</span>
+              <span className="font-medium">
+                {t.import.lessonsHeading(selected.lessons.length)}
+              </span>
               {selected.skipped > 0 && (
                 <span className="text-xs text-zinc-500">
-                  {selected.skipped}{" "}
-                  {selected.skipped === 1 ? "quiz omitido" : "quizzes omitidos"}
+                  {t.import.skippedQuizzes(selected.skipped)}
                 </span>
               )}
             </div>
@@ -161,7 +153,7 @@ export default function SectionImport({ onImport }: SectionImportProps) {
               {selected.lessons.map((lesson) => (
                 <li key={lesson.id} className="flex items-center gap-2">
                   <span className="w-16 shrink-0 text-xs text-zinc-500">
-                    {TYPE_LABELS[lesson.type]}
+                    {t.lessonType[lesson.type]}
                   </span>
                   <input
                     value={lesson.title}
@@ -174,15 +166,15 @@ export default function SectionImport({ onImport }: SectionImportProps) {
                       }))
                     }
                     className={inputClass}
-                    aria-label={`Nombre de la clase ${lesson.title}`}
+                    aria-label={t.import.lessonName(lesson.title)}
                   />
                   <button
                     type="button"
                     onClick={() => handleRemoveLesson(lesson.id)}
                     className="rounded-lg px-2 py-1 text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950"
-                    aria-label={`Quitar ${lesson.title}`}
+                    aria-label={t.import.removeLesson(lesson.title)}
                   >
-                    Quitar
+                    {t.import.remove}
                   </button>
                 </li>
               ))}
@@ -190,7 +182,7 @@ export default function SectionImport({ onImport }: SectionImportProps) {
           </div>
 
           <button type="button" onClick={handleConfirm} className={`${buttonPrimary} self-start`}>
-            Usar esta sección ({selected.lessons.length} clases)
+            {t.import.useSection(selected.lessons.length)}
           </button>
         </div>
       )}
