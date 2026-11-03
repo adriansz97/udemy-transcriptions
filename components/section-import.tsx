@@ -3,11 +3,17 @@
 import { useState } from "react";
 import { parseSectionHtml } from "@/lib/parse-section";
 import { buttonPrimary, buttonSecondary, cardClass, inputClass } from "@/lib/styles";
-import type { ParsedSection, Section } from "@/lib/types";
+import type { LessonType, ParsedSection, Section } from "@/lib/types";
 
 interface SectionImportProps {
   onImport: (section: Section) => void;
 }
+
+const TYPE_LABELS: Record<LessonType, string> = {
+  video: "Video",
+  article: "Artículo",
+  other: "Contenido",
+};
 
 export default function SectionImport({ onImport }: SectionImportProps) {
   const [html, setHtml] = useState("");
@@ -23,7 +29,7 @@ export default function SectionImport({ onImport }: SectionImportProps) {
     if (parsed.length === 0) {
       setSections(null);
       setError(
-        "No se encontraron videos. Pega el HTML del currículo de la sección (debe incluir los ítems con su título)."
+        "No se encontraron clases. Pega el HTML del currículo de la sección (debe incluir los ítems con su título)."
       );
       return;
     }
@@ -41,10 +47,10 @@ export default function SectionImport({ onImport }: SectionImportProps) {
     );
   }
 
-  function handleRemoveVideo(videoId: string) {
+  function handleRemoveLesson(lessonId: string) {
     updateSelected((section) => ({
       ...section,
-      videos: section.videos.filter((video) => video.id !== videoId),
+      lessons: section.lessons.filter((lesson) => lesson.id !== lessonId),
     }));
   }
 
@@ -52,16 +58,16 @@ export default function SectionImport({ onImport }: SectionImportProps) {
     if (!selected) return;
 
     const title = selected.title.trim();
-    const videos = selected.videos
-      .map((video) => ({ ...video, title: video.title.trim() }))
-      .filter((video) => video.title.length > 0);
+    const lessons = selected.lessons
+      .map((lesson) => ({ ...lesson, title: lesson.title.trim() }))
+      .filter((lesson) => lesson.title.length > 0);
 
-    if (!title || videos.length === 0) {
-      setError("La sección necesita un título y al menos un video.");
+    if (!title || lessons.length === 0) {
+      setError("La sección necesita un título y al menos una clase.");
       return;
     }
 
-    onImport({ title, videos });
+    onImport({ title, lessons });
   }
 
   return (
@@ -69,8 +75,8 @@ export default function SectionImport({ onImport }: SectionImportProps) {
       <div>
         <h2 className="text-lg font-semibold">1. Pega el HTML de la sección</h2>
         <p className="mt-1 text-sm text-zinc-500">
-          Copia el panel de la sección desde el currículo de Udemy. Solo se incluyen los videos;
-          artículos y quizzes se omiten.
+          Copia el panel de la sección desde el currículo de Udemy. Se incluyen videos,
+          artículos y otros contenidos; los quizzes se omiten.
         </p>
       </div>
 
@@ -122,7 +128,7 @@ export default function SectionImport({ onImport }: SectionImportProps) {
               >
                 {sections.map((section, index) => (
                   <option key={`${section.title}-${index}`} value={index}>
-                    {section.title} ({section.videos.length} videos)
+                    {section.title} ({section.lessons.length} clases)
                   </option>
                 ))}
               </select>
@@ -142,36 +148,39 @@ export default function SectionImport({ onImport }: SectionImportProps) {
 
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">Videos ({selected.videos.length})</span>
+              <span className="font-medium">Clases ({selected.lessons.length})</span>
               {selected.skipped > 0 && (
                 <span className="text-xs text-zinc-500">
-                  {selected.skipped} ítem{selected.skipped === 1 ? "" : "s"} omitido
-                  {selected.skipped === 1 ? "" : "s"} (no es video)
+                  {selected.skipped}{" "}
+                  {selected.skipped === 1 ? "quiz omitido" : "quizzes omitidos"}
                 </span>
               )}
             </div>
 
             <ol className="flex flex-col gap-2">
-              {selected.videos.map((video) => (
-                <li key={video.id} className="flex items-center gap-2">
+              {selected.lessons.map((lesson) => (
+                <li key={lesson.id} className="flex items-center gap-2">
+                  <span className="w-16 shrink-0 text-xs text-zinc-500">
+                    {TYPE_LABELS[lesson.type]}
+                  </span>
                   <input
-                    value={video.title}
+                    value={lesson.title}
                     onChange={(event) =>
                       updateSelected((section) => ({
                         ...section,
-                        videos: section.videos.map((item) =>
-                          item.id === video.id ? { ...item, title: event.target.value } : item
+                        lessons: section.lessons.map((item) =>
+                          item.id === lesson.id ? { ...item, title: event.target.value } : item
                         ),
                       }))
                     }
                     className={inputClass}
-                    aria-label={`Nombre del video ${video.title}`}
+                    aria-label={`Nombre de la clase ${lesson.title}`}
                   />
                   <button
                     type="button"
-                    onClick={() => handleRemoveVideo(video.id)}
+                    onClick={() => handleRemoveLesson(lesson.id)}
                     className="rounded-lg px-2 py-1 text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950"
-                    aria-label={`Quitar ${video.title}`}
+                    aria-label={`Quitar ${lesson.title}`}
                   >
                     Quitar
                   </button>
@@ -181,7 +190,7 @@ export default function SectionImport({ onImport }: SectionImportProps) {
           </div>
 
           <button type="button" onClick={handleConfirm} className={`${buttonPrimary} self-start`}>
-            Usar esta sección ({selected.videos.length} videos)
+            Usar esta sección ({selected.lessons.length} clases)
           </button>
         </div>
       )}

@@ -31,7 +31,7 @@ Before the final response, run one reporting pass. If candidates remain, from th
 
 ## Proyecto: Transcripciones Udemy
 
-App Next.js 16 (App Router) que convierte el HTML de una sección de Udemy en un ZIP con un Markdown por video. Corre 100 % en el navegador: sin backend ni API routes.
+App Next.js 16 (App Router) que convierte el HTML de una sección de Udemy en un ZIP con un Markdown por clase (video, artículo o nota). Corre 100 % en el navegador: sin backend ni API routes.
 
 ### Comandos
 
@@ -44,15 +44,16 @@ App Next.js 16 (App Router) que convierte el HTML de una sección de Udemy en un
 
 - `app/page.tsx` — entrada de la app.
 - `components/` — UI y estado del workspace (`workspace.tsx` orquesta los pasos).
-- `lib/` — parsers (`parse-section`, `parse-transcript`), formato Markdown, sanitización, ZIP (`fflate`) y persistencia.
+- `lib/` — parsers (`parse-section`, `parse-transcript`, `parse-article`, `parse-lesson`, `html-to-markdown`), formato Markdown, sanitización, ZIP (`fflate`) y persistencia.
 - `tests/fixtures/` — HTML real de Udemy usado por los tests.
 
 ### Reglas
 
-- No renderizar el HTML pegado: parsearlo con `DOMParser` y leer solo `textContent` (evita XSS).
+- No renderizar el HTML pegado: parsearlo con `DOMParser`. Las transcripciones leen solo `textContent`; los artículos se convierten a Markdown con `html-to-markdown` (evita XSS, nunca `dangerouslySetInnerHTML`).
+- Al importar una sección se omiten solo los quizzes; videos, artículos y contenidos no reconocidos se incluyen.
 - Mantener los parsers puros y cubiertos por tests; agregar fixtures cuando cambie el HTML de Udemy.
 - Todo nombre de archivo o carpeta pasa por `sanitizeFilename`; los duplicados se resuelven con `uniqueName`.
-- El estado vive en `localStorage` con clave versionada (`udemy-transcripts:v1`).
+- El estado vive en `localStorage` con clave versionada (`udemy-transcripts:v2`), con migración automática desde `v1`.
 - Para el guard de hidratación usar `useSyncExternalStore`; evitar `setState` síncrono dentro de `useEffect` (regla `react-hooks/set-state-in-effect`).
 - UI en español; identificadores y código en inglés.
 - No agregar backend: la app debe seguir siendo estática y client-side.

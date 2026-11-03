@@ -3,30 +3,30 @@
 import DownloadPanel from "./download-panel";
 import type { Section } from "@/lib/types";
 
-interface VideoSidebarProps {
+interface LessonSidebarProps {
   section: Section;
-  transcripts: Record<string, string>;
-  selectedVideoId: string | null;
+  contents: Record<string, string>;
+  selectedLessonId: string | null;
   completedCount: number;
   isComplete: boolean;
   downloading: boolean;
   downloadError: string | null;
-  onSelect: (videoId: string) => void;
+  onSelect: (lessonId: string) => void;
   onDownload: () => void;
 }
 
-export default function VideoSidebar({
+export default function LessonSidebar({
   section,
-  transcripts,
-  selectedVideoId,
+  contents,
+  selectedLessonId,
   completedCount,
   isComplete,
   downloading,
   downloadError,
   onSelect,
   onDownload,
-}: VideoSidebarProps) {
-  const total = section.videos.length;
+}: LessonSidebarProps) {
+  const total = section.lessons.length;
   const progress = total === 0 ? 0 : Math.round((completedCount / total) * 100);
 
   return (
@@ -37,7 +37,7 @@ export default function VideoSidebar({
 
         <div className="mt-3 flex items-center justify-between text-xs text-zinc-500">
           <span>
-            {completedCount} de {total} transcripciones
+            {completedCount} de {total} clases
           </span>
           <span>{progress}%</span>
         </div>
@@ -50,15 +50,15 @@ export default function VideoSidebar({
       </div>
 
       <ol className="flex min-h-0 flex-col gap-1 overflow-y-auto pr-1">
-        {section.videos.map((video, index) => {
-          const complete = Boolean(transcripts[video.id]?.trim());
-          const active = video.id === selectedVideoId;
+        {section.lessons.map((lesson, index) => {
+          const complete = Boolean(contents[lesson.id]?.trim());
+          const active = lesson.id === selectedLessonId;
 
           return (
-            <li key={video.id}>
+            <li key={lesson.id}>
               <button
                 type="button"
-                onClick={() => onSelect(video.id)}
+                onClick={() => onSelect(lesson.id)}
                 aria-current={active ? "true" : undefined}
                 className={`flex w-full items-start gap-2 rounded-lg px-2 py-2 text-left text-sm transition ${
                   active
@@ -76,7 +76,7 @@ export default function VideoSidebar({
                 >
                   {complete ? "✓" : index + 1}
                 </span>
-                <span className="min-w-0 break-words">{video.title}</span>
+                <span className="min-w-0 break-words">{lesson.title}</span>
               </button>
             </li>
           );

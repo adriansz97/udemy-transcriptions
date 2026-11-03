@@ -34,8 +34,8 @@ export default function DownloadPanel({
 
       <p className="mt-2 text-xs text-zinc-500">
         {isComplete
-          ? "Todo listo: una carpeta con un .md por video."
-          : `Faltan ${missing} transcripción${missing === 1 ? "" : "es"} para descargar.`}
+          ? "Todo listo: una carpeta con un .md por clase."
+          : `Faltan ${missing} clase${missing === 1 ? "" : "s"} por completar para descargar.`}
       </p>
 
       {error && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{error}</p>}

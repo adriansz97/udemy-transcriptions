@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import LessonEditor from "./lesson-editor";
+import LessonSidebar from "./lesson-sidebar";
 import SectionImport from "./section-import";
-import TranscriptEditor from "./transcript-editor";
-import VideoSidebar from "./video-sidebar";
 import { buildMarkdownFiles, buildZipName } from "@/lib/export";
 import { sanitizeFilename } from "@/lib/sanitize";
 import { clearWorkspace, loadWorkspace, saveWorkspace } from "@/lib/storage";
@@ -11,7 +11,7 @@ import { buttonSecondary } from "@/lib/styles";
 import type { Section, WorkspaceState } from "@/lib/types";
 import { downloadZip } from "@/lib/zip";
 
-const EMPTY_WORKSPACE: WorkspaceState = { section: null, transcripts: {} };
+const EMPTY_WORKSPACE: WorkspaceState = { section: null, contents: {} };
 const subscribeToHydration = () => () => {};
 const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
@@ -20,7 +20,7 @@ export default function Workspace() {
   const [workspace, setWorkspace] = useState<WorkspaceState>(
     () => loadWorkspace() ?? EMPTY_WORKSPACE
   );
-  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const hydrated = useSyncExternalStore(
@@ -34,55 +34,82 @@ export default function Workspace() {
   }, [workspace, hydrated]);
 
   const section = workspace.section;
-  const videos = section?.videos ?? [];
-  const completedCount = videos.filter(
-    (video) => workspace.transcripts[video.id]?.trim()
+  const lessons = section?.lessons ?? [];
+  const completedCount = lessons.filter(
+    (lesson) => workspace.contents[lesson.id]?.trim()
   ).length;
-  const selectedVideo =
-    videos.find((video) => video.id === selectedVideoId) ?? videos[0] ?? null;
-  const isComplete = videos.length > 0 && completedCount === videos.length;
+  const selectedLesson =
+    lessons.find((lesson) => lesson.id === selectedLessonId) ?? lessons[0] ?? null;
+  const isComplete = lessons.length > 0 && completedCount === lessons.length;
 
   function handleImport(nextSection: Section) {
-    setWorkspace({ section: nextSection, transcripts: {} });
-    setSelectedVideoId(nextSection.videos[0]?.id ?? null);
+    setWorkspace({ section: nextSection, contents: {} });
+    setSelectedLessonId(nextSection.lessons[0]?.id ?? null);
     setDownloadError(null);
   }
 
-  function handleSaveTranscript(videoId: string, body: string) {
-    const wasComplete = Boolean(workspace.transcripts[videoId]?.trim());
-    const transcripts = { ...workspace.transcripts, [videoId]: body };
+  function handleSaveContent(lessonId: string, body: string) {
+    const wasComplete = Boolean(workspace.contents[lessonId]?.trim());
+    const contents = { ...workspace.contents, [lessonId]: body };
 
-    setWorkspace((current) => ({ ...current, transcripts }));
+    setWorkspace((current) => ({ ...current, contents }));
 
     if (!wasComplete) {
-      const currentIndex = videos.findIndex((video) => video.id === videoId);
+      const currentIndex = lessons.findIndex((lesson) => lesson.id === lessonId);
       const ordered = [
-        ...videos.slice(currentIndex + 1),
-        ...videos.slice(0, currentIndex + 1),
+        ...lessons.slice(currentIndex + 1),
+        ...lessons.slice(0, currentIndex + 1),
       ];
-      const nextPending = ordered.find((video) => !transcripts[video.id]?.trim());
+      const nextPending = ordered.find((lesson) => !contents[lesson.id]?.trim());
 
-      if (nextPending) setSelectedVideoId(nextPending.id);
+      if (nextPending) setSelectedLessonId(nextPending.id);
     }
   }
 
-  function handleDeleteTranscript(videoId: string) {
+  function handleDeleteContent(lessonId: string) {
     setWorkspace((current) => {
-      const transcripts = { ...current.transcripts };
-      delete transcripts[videoId];
-      return { ...current, transcripts };
+      const contents = { ...current.contents };
+      delete contents[lessonId];
+      return { ...current, contents };
+    });
+  }
+
+  function handleRemoveLessonFromSection(lessonId: string) {
+    setWorkspace((current) => {
+      const section = current.section;
+      if (!section) return current;
+
+      const remainingLessons = section.lessons.filter((lesson) => lesson.id !== lessonId);
+      const contents = { ...current.contents };
+      delete contents[lessonId];
+
+      if (remainingLessons.length === 0) {
+        clearWorkspace();
+        setSelectedLessonId(null);
+        setDownloadError(null);
+        return EMPTY_WORKSPACE;
+      }
+
+      if (selectedLessonId === lessonId) {
+        setSelectedLessonId(remainingLessons[0]?.id ?? null);
+      }
+
+      return {
+        section: { ...section, lessons: remainingLessons },
+        contents,
+      };
     });
   }
 
   function handleReset() {
     const confirmed = window.confirm(
-      "¿Borrar la sección y todas las transcripciones guardadas? Esta acción no se puede deshacer."
+      "¿Borrar la sección y todos los contenidos guardados? Esta acción no se puede deshacer."
     );
     if (!confirmed) return;
 
     clearWorkspace();
     setWorkspace(EMPTY_WORKSPACE);
-    setSelectedVideoId(null);
+    setSelectedLessonId(null);
     setDownloadError(null);
   }
 
@@ -93,7 +120,7 @@ export default function Workspace() {
     setDownloadError(null);
 
     try {
-      const files = buildMarkdownFiles(section, workspace.transcripts);
+      const files = buildMarkdownFiles(section, workspace.contents);
       await downloadZip(
         buildZipName(section.title),
         sanitizeFilename(section.title, "seccion"),
@@ -116,7 +143,7 @@ export default function Workspace() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Transcripciones Udemy</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            Sección → transcripciones → ZIP con un Markdown por video.
+            Sección → transcripciones y artículos → ZIP con un Markdown por clase.
           </p>
         </div>
 
@@ -131,30 +158,31 @@ export default function Workspace() {
         <SectionImport onImport={handleImport} />
       ) : (
         <div className="grid items-start gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-          <VideoSidebar
+          <LessonSidebar
             section={section}
-            transcripts={workspace.transcripts}
-            selectedVideoId={selectedVideoId}
+            contents={workspace.contents}
+            selectedLessonId={selectedLesson?.id ?? null}
             completedCount={completedCount}
             isComplete={isComplete}
             downloading={downloading}
             downloadError={downloadError}
-            onSelect={setSelectedVideoId}
+            onSelect={setSelectedLessonId}
             onDownload={handleDownload}
           />
 
           <section>
-            {selectedVideo ? (
-              <TranscriptEditor
-                key={selectedVideo.id}
-                video={selectedVideo}
-                value={workspace.transcripts[selectedVideo.id]}
-                onSave={handleSaveTranscript}
-                onDelete={handleDeleteTranscript}
+            {selectedLesson ? (
+              <LessonEditor
+                key={selectedLesson.id}
+                lesson={selectedLesson}
+                value={workspace.contents[selectedLesson.id]}
+                onSave={handleSaveContent}
+                onDelete={handleDeleteContent}
+                onRemoveLesson={handleRemoveLessonFromSection}
               />
             ) : (
               <p className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700">
-                Selecciona un video del listado para agregar su transcripción.
+                Selecciona una clase del listado para agregar su contenido.
               </p>
             )}
           </section>

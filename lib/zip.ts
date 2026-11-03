@@ -1,4 +1,5 @@
 import { zip } from "fflate";
+import { downloadBlob } from "./download";
 import type { MarkdownFile } from "./export";
 
 export function createZip(folderName: string, files: MarkdownFile[]): Promise<Uint8Array> {
@@ -23,15 +24,5 @@ export async function downloadZip(
   files: MarkdownFile[]
 ): Promise<void> {
   const data = await createZip(folderName, files);
-  const blob = new Blob([new Uint8Array(data)], { type: "application/zip" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-
-  link.href = url;
-  link.download = zipName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  downloadBlob(zipName, new Blob([new Uint8Array(data)], { type: "application/zip" }));
 }

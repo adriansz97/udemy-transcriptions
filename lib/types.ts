@@ -1,14 +1,14 @@
-export type VideoType = "video" | "article" | "quiz" | "other";
+export type LessonType = "video" | "article" | "other";
 
-export interface VideoItem {
+export interface Lesson {
   id: string;
   title: string;
-  type: VideoType;
+  type: LessonType;
 }
 
 export interface Section {
   title: string;
-  videos: VideoItem[];
+  lessons: Lesson[];
 }
 
 export interface ParsedSection extends Section {
@@ -17,5 +17,5 @@ export interface ParsedSection extends Section {
 
 export interface WorkspaceState {
   section: Section | null;
-  transcripts: Record<string, string>;
+  contents: Record<string, string>;
 }

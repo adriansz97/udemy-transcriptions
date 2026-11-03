@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Transcripciones Udemy",
-  description: "Convierte las transcripciones de una sección de Udemy en archivos Markdown",
+  description: "Convierte las transcripciones y artículos de una sección de Udemy en archivos Markdown",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

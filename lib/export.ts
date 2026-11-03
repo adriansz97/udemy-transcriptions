@@ -7,15 +7,19 @@ export interface MarkdownFile {
   content: string;
 }
 
+export function buildMarkdownFileName(title: string): string {
+  return `${sanitizeFilename(title)}.md`;
+}
+
 export function buildMarkdownFiles(
   section: Section,
-  transcripts: Record<string, string>
+  contents: Record<string, string>
 ): MarkdownFile[] {
   const usedNames = new Set<string>();
 
-  return section.videos.map((video) => ({
-    name: `${uniqueName(sanitizeFilename(video.title), usedNames)}.md`,
-    content: buildMarkdown(video.title, transcripts[video.id] ?? ""),
+  return section.lessons.map((lesson) => ({
+    name: `${uniqueName(sanitizeFilename(lesson.title), usedNames)}.md`,
+    content: buildMarkdown(lesson.title, contents[lesson.id] ?? ""),
   }));
 }
 
