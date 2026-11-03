@@ -44,7 +44,7 @@ App Next.js 16 (App Router) que convierte el HTML de una sección de Udemy en un
 
 - `app/page.tsx` — entrada de la app.
 - `components/` — UI y estado del workspace (`workspace.tsx` orquesta los pasos).
-- `lib/` — parsers (`parse-section`, `parse-transcript`, `parse-article`, `parse-lesson`, `html-to-markdown`), formato Markdown, sanitización, ZIP (`fflate`) y persistencia.
+- `lib/` — parsers (`parse-section`, `parse-transcript`, `parse-article`, `parse-lesson`, `html-to-markdown`), formato Markdown, sanitización, ZIP (`fflate`), persistencia e i18n (`lib/i18n/`).
 - `tests/fixtures/` — HTML real de Udemy usado por los tests.
 
 ### Reglas
@@ -55,5 +55,6 @@ App Next.js 16 (App Router) que convierte el HTML de una sección de Udemy en un
 - Todo nombre de archivo o carpeta pasa por `sanitizeFilename`; los duplicados se resuelven con `uniqueName`.
 - El estado vive en `localStorage` con clave versionada (`udemy-transcripts:v2`), con migración automática desde `v1`.
 - Para el guard de hidratación usar `useSyncExternalStore`; evitar `setState` síncrono dentro de `useEffect` (regla `react-hooks/set-state-in-effect`).
-- UI en español; identificadores y código en inglés.
+- UI en español e inglés mediante los diccionarios de `lib/i18n/dictionaries/`; identificadores y código en inglés.
+- Cualquier texto visible nuevo va en `es.ts` y `en.ts` (el tipo `Dictionary` exige paridad). El idioma se resuelve en cliente y se guarda en `localStorage` (`udemy-transcripts:locale`).
 - No agregar backend: la app debe seguir siendo estática y client-side.
